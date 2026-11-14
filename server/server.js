@@ -15,7 +15,13 @@ import authorRoutes from './routes/authorRoutes.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const clientDistPath = path.resolve(__dirname, '../client/dist')
+const clientDistCandidates = [
+  path.resolve(__dirname, '../client/dist'),
+  path.resolve(__dirname, '../dist'),
+]
+const clientDistPath =
+  clientDistCandidates.find((dir) => fs.existsSync(path.join(dir, 'index.html'))) ||
+  clientDistCandidates[0]
 const clientIndexPath = path.join(clientDistPath, 'index.html')
 
 const app = express()
