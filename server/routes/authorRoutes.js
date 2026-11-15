@@ -1,38 +1,40 @@
-import express from 'express'
+import { Router } from 'express'
 import {
-  getAuthors,
-  getAdminAuthors,
   createAuthor,
-  updateAuthor,
   deleteAuthor,
+  getAdminAuthors,
+  getAuthors,
+  updateAuthor,
 } from '../controllers/authorController.js'
 import { adminAuth } from '../middleware/adminAuth.js'
-import uploadAuthorPhoto, {
-  validateAuthorPhoto,
-} from '../middleware/uploadAuthorPhoto.js'
+import { singleImageUpload } from '../middleware/uploadImage.js'
+import { validate } from '../middleware/validate.js'
+import {
+  createAuthorSchema,
+  updateAuthorSchema,
+} from '../validators/authorValidator.js'
+import { objectIdParamSchema } from '../validators/commonValidator.js'
 
-const router = express.Router()
+const router = Router()
+const authorIdParams = validate(objectIdParamSchema('author'), 'params')
 
 router.get('/', getAuthors)
-
 router.get('/admin', adminAuth, getAdminAuthors)
-
 router.post(
   '/',
   adminAuth,
-  uploadAuthorPhoto.single('profileImage'),
-  validateAuthorPhoto,
+  ...singleImageUpload('profileImage'),
+  validate(createAuthorSchema),
   createAuthor
 )
-
 router.patch(
   '/:id',
   adminAuth,
-  uploadAuthorPhoto.single('profileImage'),
-  validateAuthorPhoto,
+  authorIdParams,
+  ...singleImageUpload('profileImage'),
+  validate(updateAuthorSchema),
   updateAuthor
 )
-
-router.delete('/:id', adminAuth, deleteAuthor)
+router.delete('/:id', adminAuth, authorIdParams, deleteAuthor)
 
 export default router

@@ -1,26 +1,45 @@
-
 import { Router } from 'express'
 import {
   adminLogin,
   forgotAdminPassword,
-  resetAdminPassword,
   getAdminProfile,
+  resetAdminPassword,
   updateAdminProfile,
 } from '../controllers/adminController.js'
 import { adminAuth } from '../middleware/adminAuth.js'
+import { authLimiter } from '../middleware/rateLimiters.js'
+import { validate } from '../middleware/validate.js'
+import {
+  adminLoginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  updateProfileSchema,
+} from '../validators/adminValidator.js'
 
 const router = Router()
 
-// Authentication
-router.post('/login', adminLogin)
-router.post('/forgot-password', forgotAdminPassword)
-router.post('/reset-password', resetAdminPassword)
+router.post('/login', authLimiter, validate(adminLoginSchema), adminLogin)
+router.post(
+  '/forgot-password',
+  authLimiter,
+  validate(forgotPasswordSchema),
+  forgotAdminPassword
+)
+router.post(
+  '/reset-password',
+  authLimiter,
+  validate(resetPasswordSchema),
+  resetAdminPassword
+)
 
-// Admin Profile
 router.get('/profile', adminAuth, getAdminProfile)
-router.patch('/profile', adminAuth, updateAdminProfile)
+router.patch(
+  '/profile',
+  adminAuth,
+  validate(updateProfileSchema),
+  updateAdminProfile
+)
 
-// Verify Admin
 router.get('/verify', adminAuth, (req, res) => {
   return res.status(200).json({
     success: true,

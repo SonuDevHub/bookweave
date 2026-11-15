@@ -1,35 +1,50 @@
 import nodemailer from 'nodemailer'
+import { renderEmailTemplate } from './emailTemplate.js'
+
+export function isEmailConfigured() {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env
+  return Boolean(SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS && SMTP_FROM)
+}
 
 function createTransporter() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env
+  if (!isEmailConfigured()) return null
 
-  if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
-    return null
-  }
+  const port = Number(process.env.SMTP_PORT)
 
   return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465,
+    host: process.env.SMTP_HOST,
+    port,
+    secure: port === 465,
     auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   })
 }
 
-const escapeHtml = (value = '') =>
-  String(value).replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  })[char])
-
-export const sendEnquiryEmails = async (enquiry) => {
+export async function sendPasswordResetOtpEmail(toEmail, otp) {
   const transporter = createTransporter()
+  if (!transporter) {
+    throw new Error('Email service is not configured')
+  }
 
+  const html = await renderEmailTemplate('adminResetOtp', {
+    otp,
+    expiresMinutes: 10,
+    year: new Date().getFullYear(),
+  })
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'BookWeave Password Reset OTP',
+    text: `Your BookWeave admin password reset OTP is ${otp}.\n\nIt expires in 10 minutes. Do not share this code with anyone.`,
+    html,
+  })
+}
+
+export async function sendEnquiryEmails(enquiry) {
+  const transporter = createTransporter()
   if (!transporter) {
     console.warn('SMTP is not configured. Skipping enquiry notification emails.')
     return []
@@ -47,41 +62,56 @@ export const sendEnquiryEmails = async (enquiry) => {
   } = enquiry
 
   const adminEmail = process.env.ENQUIRY_ADMIN_EMAIL || process.env.SMTP_USER
+  const selectedServices =
+    services && services.length ? services.join(', ') : 'Not specified'
+  const year = new Date().getFullYear()
+
+  const [adminHtml, customerHtml] = await Promise.all([
+    renderEmailTemplate('enquiryAdminNotification', {
+      authorName,
+      email,
+      phone: phone || 'Not provided',
+      bookTitle: bookTitle || 'Not provided',
+      genre: genre || 'Not provided',
+      manuscriptStatus: manuscriptStatus || 'Not provided',
+      services: selectedServices,
+      message,
+      year,
+    }),
+    renderEmailTemplate('enquiryConfirmation', {
+      authorName,
+      bookContext: bookTitle ? ` for "${bookTitle}"` : '',
+      year,
+    }),
+  ])
 
   const adminMail = {
     from: process.env.SMTP_FROM,
     to: adminEmail,
     subject: `New Publishing Enquiry – ${authorName}`,
-    text: `
-New enquiry received on BookWeave.
-
-Author: ${authorName}
-Email: ${email}
-Phone: ${phone || 'Not provided'}
-Book: ${bookTitle || 'Not provided'}
-Genre: ${genre || 'Not provided'}
-Manuscript: ${manuscriptStatus || 'Not provided'}
-Services: ${services?.join(', ') || 'Not specified'}
-
-Message:
-${message}
-    `,
+    text: [
+      'New enquiry received on BookWeave.',
+      '',
+      `Author: ${authorName}`,
+      `Email: ${email}`,
+      `Phone: ${phone || 'Not provided'}`,
+      `Book: ${bookTitle || 'Not provided'}`,
+      `Genre: ${genre || 'Not provided'}`,
+      `Manuscript: ${manuscriptStatus || 'Not provided'}`,
+      `Services: ${selectedServices}`,
+      '',
+      'Message:',
+      message,
+    ].join('\n'),
+    html: adminHtml,
   }
 
   const customerMail = {
     from: process.env.SMTP_FROM,
     to: email,
     subject: 'Your Enquiry Has Been Received | BookWeave',
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:28px;color:#263329;">
-        <h2 style="color:#5e7f49;">BookWeave</h2>
-        <p>Dear ${escapeHtml(authorName)},</p>
-        <p>Thank you for choosing BookWeave.</p>
-        <p>We've received your publishing enquiry. Our team will review your details and get in touch with you soon.</p>
-        <p style="margin-top:28px;">Warm regards,<br><strong>Team BookWeave</strong></p>
-        <p style="color:#5e7f49;font-size:13px;">Every story deserves to be told.</p>
-      </div>
-    `,
+    text: `Dear ${authorName},\n\nThank you for choosing BookWeave. We have received your publishing enquiry and will get in touch with you soon.\n\nWarm regards,\nTeam BookWeave`,
+    html: customerHtml,
   }
 
   return Promise.allSettled([

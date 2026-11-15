@@ -1,37 +1,29 @@
-
 import multer from 'multer'
 import { fileTypeFromBuffer } from 'file-type'
+import { ALLOWED_IMAGE_TYPES, MAX_UPLOAD_SIZE_BYTES } from '../constants/index.js'
 
-const storage = multer.memoryStorage()
-
-const uploadBookCover = multer({
-  storage,
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: MAX_UPLOAD_SIZE_BYTES,
     files: 1,
   },
 })
 
-const allowedTypes = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-])
-
-export const validateBookCover = async (req, res, next) => {
+export async function validateUploadedImage(req, res, next) {
   if (!req.file) return next()
 
-  try {
-    if (!req.file.buffer) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid image file.',
-      })
-    }
+  if (!req.file.buffer) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid image file.',
+    })
+  }
 
+  try {
     const detectedType = await fileTypeFromBuffer(req.file.buffer)
 
-    if (!detectedType || !allowedTypes.has(detectedType.mime)) {
+    if (!detectedType || !ALLOWED_IMAGE_TYPES.has(detectedType.mime)) {
       return res.status(400).json({
         success: false,
         message: 'Only valid JPEG, PNG and WebP images are allowed.',
@@ -39,11 +31,9 @@ export const validateBookCover = async (req, res, next) => {
     }
 
     req.file.mimetype = detectedType.mime
-
     return next()
   } catch (error) {
     console.error('Image validation error:', error.message)
-
     return res.status(400).json({
       success: false,
       message: 'Unable to validate image file.',
@@ -51,4 +41,6 @@ export const validateBookCover = async (req, res, next) => {
   }
 }
 
-export default uploadBookCover
+export function singleImageUpload(fieldName) {
+  return [uploadImage.single(fieldName), validateUploadedImage]
+}

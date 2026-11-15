@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Enquiry Has Been Received</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#faf8f4;font-family:Arial,Helvetica,sans-serif;color:#263329;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e6e2d8;border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px 32px;border-bottom:1px solid #e6e2d8;background-color:#faf8f4;">
+                <h1 style="margin:0;font-size:22px;font-weight:700;color:#5e7f49;">BookWeave</h1>
+                <p style="margin:6px 0 0;font-size:13px;color:#5f6b63;">Every story deserves to be told.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Dear {{authorName}},</p>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3f4d44;">
+                  Thank you for reaching out to BookWeave.
+                </p>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3f4d44;">
+                  We have received your publishing enquiry{{bookContext}} and our editorial team will review your details and get in touch with you soon.
+                </p>
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.6;">
+                  Warm regards,<br />
+                  <strong>Team BookWeave</strong>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 32px;border-top:1px solid #e6e2d8;background-color:#faf8f4;font-size:12px;color:#6c7770;text-align:center;">
+                &copy; {{year}} BookWeave. All rights reserved.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
