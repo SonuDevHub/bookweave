@@ -1,8 +1,9 @@
 
 import { API_URL, parseJsonSafe } from '../config/api'
+import { getAdminToken, handleUnauthorizedAdmin } from '../utils/adminAuth'
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('bookweave_admin_token')
+  const token = getAdminToken()
 
   const isFormData = options.body instanceof FormData
 
@@ -18,11 +19,7 @@ async function request(endpoint, options = {}) {
   const result = await parseJsonSafe(response)
 
   if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem('bookweave_admin_token')
-    localStorage.removeItem('bookweave_admin')
-    if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
-      window.location.href = '/admin/login'
-    }
+    handleUnauthorizedAdmin()
   }
 
   if (!response.ok || !result.success) {

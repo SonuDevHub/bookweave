@@ -1,16 +1,50 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 import logo from "../assets/bookweave-logo.png";
 import { API_URL, parseJsonSafe } from "../config/api";
+import {
+  clearAdminSession,
+  getAdminToken,
+  isSafeAdminRedirect,
+  setAdminSession,
+} from "../utils/adminAuth";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const requestedPath = location.state?.from?.pathname;
+  const redirectTarget = isSafeAdminRedirect(requestedPath) ? requestedPath : "/admin";
+
+  useEffect(() => {
+    const existingToken = getAdminToken();
+    if (!existingToken) return;
+
+    const controller = new AbortController();
+
+    fetch(`${API_URL}/admin/verify`, {
+      headers: { Authorization: `Bearer ${existingToken}` },
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (response.ok) {
+          navigate(redirectTarget, { replace: true });
+        } else if (response.status === 401 || response.status === 403) {
+          clearAdminSession();
+        }
+      })
+      .catch(() => {
+        // Ignore network errors while already on login page
+      });
+
+    return () => controller.abort();
+  }, [navigate, redirectTarget]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -31,11 +65,10 @@ export default function AdminLogin() {
         throw new Error(result.message || "Login failed");
       }
 
-      localStorage.setItem("bookweave_admin_token", result.token);
-      localStorage.setItem("bookweave_admin", JSON.stringify(result.admin));
+      setAdminSession(result.token, result.admin);
 
       toast.success("Login successful");
-      navigate("/admin", { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (error) {
       toast.error(
         error.message === "Failed to fetch"

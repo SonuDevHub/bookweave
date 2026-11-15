@@ -3,16 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "main": "server/server.js",
-  "description": "BookWeave publishing platform (React + Vite client and Express + MongoDB server)",
+  "description": "BookWeave publishing platform — Single-Domain Monolith (React + Vite client and Express + MongoDB server)",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
+    "dev": "node -e \"const {spawn}=require('child_process');const run=(cmd,args)=>spawn(cmd,args,{stdio:'inherit',shell:true});const s=run('npm',['--prefix','server','run','dev']);const c=run('npm',['--prefix','client','run','dev']);const stop=()=>{s.kill();c.kill();};process.on('SIGINT',stop);process.on('SIGTERM',stop);\"",
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
     "install:all": "npm --prefix server install && npm --prefix client install --include=dev",
-    "build": "npm --prefix server install && npm --prefix client install --include=dev && npm --prefix client run build && node -e \"const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true});fs.cpSync('client/dist','dist',{recursive:true});\"",
-    "start": "npm --prefix server start",
+    "build": "npm run install:all && npm --prefix client run build",
+    "build:client": "npm --prefix client run build",
+    "start": "node server/server.js",
     "lint": "npm --prefix client run lint"
   }
 }

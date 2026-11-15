@@ -1,7 +1,8 @@
 import { API_URL, parseJsonSafe } from '../config/api'
+import { getAdminToken, handleUnauthorizedAdmin } from '../utils/adminAuth'
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('bookweave_admin_token')
+  const token = getAdminToken()
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
@@ -13,6 +14,10 @@ async function request(endpoint, options = {}) {
   })
 
   const result = await parseJsonSafe(response)
+
+  if (response.status === 401 || response.status === 403) {
+    handleUnauthorizedAdmin()
+  }
 
   if (!response.ok || !result.success) {
     throw new Error(result.message || 'Request failed')

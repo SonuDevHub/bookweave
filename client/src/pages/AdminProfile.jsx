@@ -3,20 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { UserRound, Mail, ShieldCheck, CalendarDays, LogOut } from 'lucide-react'
 import { toast } from 'react-toastify'
+import { clearAdminSession, getStoredAdmin } from '../utils/adminAuth'
 
 export default function AdminProfile() {
   const navigate = useNavigate()
-  const [admin] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('bookweave_admin') || '{}')
-    } catch {
-      return {}
-    }
-  })
+  const [admin] = useState(() => getStoredAdmin())
 
   function handleLogout() {
-    localStorage.removeItem('bookweave_admin_token')
-    localStorage.removeItem('bookweave_admin')
+    clearAdminSession()
     toast.success('Logged out successfully')
     navigate('/admin/login', { replace: true })
   }

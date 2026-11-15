@@ -1,12 +1,13 @@
 import { API_URL, parseJsonSafe } from '../config/api'
+import { getAdminToken, handleUnauthorizedAdmin } from '../utils/adminAuth'
 
 async function authorRequest(endpoint, options = {}) {
-  const token = localStorage.getItem('bookweave_admin_token')
+  const token = getAdminToken()
 
   const response = await fetch(`${API_URL}/authors${endpoint}`, {
     ...options,
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   })
@@ -15,9 +16,7 @@ async function authorRequest(endpoint, options = {}) {
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('bookweave_admin_token')
-      localStorage.removeItem('bookweave_admin')
-      window.location.href = '/admin/login'
+      handleUnauthorizedAdmin()
     }
 
     throw new Error(result.message || 'Something went wrong.')

@@ -1,5 +1,5 @@
 
-import 'dotenv/config'
+import '../config/env.js'
 import bcrypt from 'bcryptjs'
 import { connectDB } from '../config/db.js'
 import Admin from '../models/Admin.js'

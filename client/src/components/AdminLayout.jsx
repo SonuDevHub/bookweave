@@ -1,6 +1,6 @@
 
-import { useState } from 'react'
-import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, Outlet, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   MessageSquare,
@@ -15,34 +15,53 @@ import {
 
 import logo from '../assets/bookweave-logo.png'
 import sidebarArt from '../assets/bookweave-sidebar-bg.png'
+import { API_URL } from '../config/api'
+import { clearAdminSession, getAdminToken, getStoredAdmin } from '../utils/adminAuth'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const token = localStorage.getItem('bookweave_admin_token')
+  const token = getAdminToken()
+  const admin = getStoredAdmin()
 
-  const admin = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('bookweave_admin') || '{}')
-    } catch {
-      return {}
-    }
-  })()
+  useEffect(() => {
+    if (!token) return
 
-  if (!token) return <Navigate to="/admin/login" replace />
+    const controller = new AbortController()
+
+    fetch(`${API_URL}/admin/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (response.status === 401 || response.status === 403) {
+          clearAdminSession()
+          navigate('/admin/login', { state: { from: location }, replace: true })
+        }
+      })
+      .catch(() => {
+        // Ignore transient network/abort errors; page-level requests handle connectivity feedback
+      })
+
+    return () => controller.abort()
+  }, [token, navigate, location])
+
+  if (!token) {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />
+  }
 
   const navItems = [
-  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
-  { label: 'Enquiries', path: '/admin/enquiries', icon: MessageSquare },
-  { label: 'Books', path: '/admin/books', icon: BookOpen },
-  { label: 'Authors', path: '/admin/authors', icon: UsersRound },
-]
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, end: true },
+    { label: 'Enquiries', path: '/admin/enquiries', icon: MessageSquare },
+    { label: 'Books', path: '/admin/books', icon: BookOpen },
+    { label: 'Authors', path: '/admin/authors', icon: UsersRound },
+  ]
 
   const handleLogout = () => {
-    localStorage.removeItem('bookweave_admin_token')
-    localStorage.removeItem('bookweave_admin')
+    clearAdminSession()
     navigate('/admin/login', { replace: true })
   }
 

@@ -15,9 +15,9 @@ const router = Router()
 router.post('/', createEnquiry)
 
 // Admin-only routes
+router.get('/dashboard-summary', adminAuth, getDashboardSummary)
 router.get('/', adminAuth, getEnquiries)
 router.patch('/:id/status', adminAuth, updateEnquiryStatus)
 router.delete('/:id', adminAuth, deleteEnquiry)
-router.get('/dashboard-summary', adminAuth, getDashboardSummary)
 
 export default router
