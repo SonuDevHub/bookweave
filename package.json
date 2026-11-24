@@ -8,6 +8,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "postinstall": "npm run build",
     "dev": "node -e \"const {spawn}=require('child_process');const run=(cmd,args)=>spawn(cmd,args,{stdio:'inherit',shell:true});const s=run('npm',['--prefix','server','run','dev']);const c=run('npm',['--prefix','client','run','dev']);const stop=()=>{s.kill();c.kill();};process.on('SIGINT',stop);process.on('SIGTERM',stop);\"",
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
